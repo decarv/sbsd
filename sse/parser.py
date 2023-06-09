@@ -3,20 +3,19 @@ class Parser():
     """
     Parser for documents and for metadata webpage
     """
+    def __init__(self):
+        pass
 
 
 
-for url in urls:
-    self.parse_thesis(url)
 
-
-def to_json(self):
-    return json.dumps(
-        {
-            k: v.__dict__
-            for k, v in self.theses.items()
-        }
-    )
+    def to_json(self):
+        return json.dumps(
+            {
+                k: v.__dict__
+                for k, v in self.theses.items()
+            }
+        )
 
 
 def store_theses(self):
