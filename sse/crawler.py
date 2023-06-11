@@ -1,10 +1,13 @@
 
 import os
 import sys
+import chardet
 import logging
 import sqlite3
 import requests
 from queue import Queue
+from bs4 import BeautifulSoup
+from typing import Optional
 
 import config
 from models.webpage import Webpage
@@ -17,6 +20,7 @@ class Crawler:
         Initializes the crawler with necessary parameters and establishes a database connection.
         """
         self.logger: logging.Logger
+        self.session: requests.Session
         self.conn: sqlite3.Connection
         self.cursor: sqlite3.Cursor
         self.err_conn: sqlite3.Connection
@@ -24,62 +28,181 @@ class Crawler:
 
         self._logging_setup(kwargs.get("logs_path"))
 
-        self.logger.info("INITIATING CRAWLER")
+        self.logger.info("Initializing crawler config")
 
-        db_path: str = os.path.join(
-            kwargs.get("data_path", "."),
-            kwargs.get("db_name", "webpages.db")
-        )
+        self._session_setup()
+
+        db_path: str = os.path.join(kwargs.get("data_path", "."), kwargs.get("db_name", "webpages.db"))
         self._database_setup(db_path)
 
-        err_db_path: str = os.path.join(
-            kwargs.get("err_path", "."),
-            kwargs.get("err_db_name", "errors.db")
-        )
+        err_db_path: str = os.path.join(kwargs.get("err_path", "."), kwargs.get("err_db_name", "errors.db"))
         self._err_database_setup(err_db_path)
 
-        # session setup
-        self.session = requests.Session()
-        self.session.headers.update({"Accept-Language": "pt-br,pt-BR"})
-
     def start(self) -> None:
-
-        self.logger.info("CRAWLER STARTED")
+        self.logger.info("Started Crawler.")
 
         queue: Queue[Webpage] = Queue()  # Queue to crawl
         queued: set[Webpage] = set()
         self._execute_preprocess(queue, queued)
 
-        # Traverse the website as BFS
         while not queue.empty():
             webpage: Webpage = queue.get()
-            self.logger.info(f"SCRAPING URL: {webpage.url}.")
-            if not webpage.is_document:
-                if webpage.is_metadata:
-                    self._database_insert_metadata(Metadata(webpage))
 
-                for hyperlink in webpage.children_hyperlinks():
-                    child_webpage = Webpage(hyperlink)
-                    if child_webpage.errors:
-                        self._err_database_insert(webpage.url, str(webpage.errors))
+            try:
+                self.logger.info(f"Processing Webpage object: {webpage}.")
+                webpage.process(self.session)
+            except Exception as e:
+                self.logger.error(f"Error while processing webpage: {webpage.url}")
+                self._err_database_insert(webpage.url, str(e))
+                continue
+
+            if webpage.is_crawlable:
+                if webpage.is_metadata:
+                    metadata = Metadata(webpage)
+                    try:
+                        self._database_insert_metadata(metadata)
+                    except Exception as e:
+                        self.logger.error(f"Unable to store metadata for {metadata.url} in database. Error: {e}")
+                        self._err_database_insert(metadata.url, f"{e}")
                         continue
 
+                for hyperlink in webpage.children_hyperlinks:
+                    child_webpage: Webpage = Webpage(hyperlink)
                     if child_webpage.is_crawlable and child_webpage not in queued:
-                        success = self._database_insert_webpage(child_webpage)
-                        if success:
-                            self.logger.info(f"NEW CHILD URL INSERTED IN DATABASE: {webpage.url}")
+                        try:
+                            self.logger.info(f"Inserting in database: {webpage.url}")
+                            self._database_insert_webpage(webpage)
+                            queue.put(child_webpage)
                             queued.add(child_webpage)
-                            if not child_webpage.is_document:
-                                self.logger.info(f"CHILD URL ENQUEUED")
-                                queue.put(child_webpage)
+                        except Exception as e:
+                            self.logger.error(f"Could not insert in database: {child_webpage.url}")
+                            self._err_database_insert(child_webpage.url, str(e))
             self._database_update_crawled(webpage)
-            webpage.delete_cache()
+
+    def crawl_sitemap(self):
+        self.logger.info("Started Sitemap Crawler")
+        sitemap_urls = [
+            'https://www.teses.usp.br/sitemap/sitemap01.xml',
+            'https://www.teses.usp.br/sitemap/sitemap02.xml',
+            'https://www.teses.usp.br/sitemap/sitemap03.xml',
+            'https://www.teses.usp.br/sitemap/201905.xml',
+            'https://www.teses.usp.br/sitemap/201906.xml',
+            'https://www.teses.usp.br/sitemap/201907.xml',
+            'https://www.teses.usp.br/sitemap/201908.xml',
+            'https://www.teses.usp.br/sitemap/201909.xml',
+            'https://www.teses.usp.br/sitemap/201910.xml',
+            'https://www.teses.usp.br/sitemap/201911.xml',
+            'https://www.teses.usp.br/sitemap/201912.xml',
+            'https://www.teses.usp.br/sitemap/202001.xml',
+            'https://www.teses.usp.br/sitemap/202002.xml',
+            'https://www.teses.usp.br/sitemap/202003.xml',
+            'https://www.teses.usp.br/sitemap/202004.xml',
+            'https://www.teses.usp.br/sitemap/202005.xml',
+            'https://www.teses.usp.br/sitemap/202006.xml',
+            'https://www.teses.usp.br/sitemap/202007.xml',
+            'https://www.teses.usp.br/sitemap/202008.xml',
+            'https://www.teses.usp.br/sitemap/202009.xml',
+            'https://www.teses.usp.br/sitemap/202010.xml',
+            'https://www.teses.usp.br/sitemap/202011.xml',
+            'https://www.teses.usp.br/sitemap/202012.xml',
+            'https://www.teses.usp.br/sitemap/202101.xml',
+            'https://www.teses.usp.br/sitemap/202102.xml',
+            'https://www.teses.usp.br/sitemap/202103.xml',
+            'https://www.teses.usp.br/sitemap/202104.xml',
+            'https://www.teses.usp.br/sitemap/202105.xml',
+            'https://www.teses.usp.br/sitemap/202106.xml',
+            'https://www.teses.usp.br/sitemap/202107.xml',
+            'https://www.teses.usp.br/sitemap/202108.xml',
+            'https://www.teses.usp.br/sitemap/202109.xml',
+            'https://www.teses.usp.br/sitemap/202110.xml',
+            'https://www.teses.usp.br/sitemap/202111.xml',
+            'https://www.teses.usp.br/sitemap/202112.xml',
+            'https://www.teses.usp.br/sitemap/202201.xml',
+            'https://www.teses.usp.br/sitemap/202202.xml',
+            'https://www.teses.usp.br/sitemap/202203.xml',
+            'https://www.teses.usp.br/sitemap/202204.xml',
+            'https://www.teses.usp.br/sitemap/202205.xml',
+            'https://www.teses.usp.br/sitemap/202206.xml',
+            'https://www.teses.usp.br/sitemap/202207.xml',
+            'https://www.teses.usp.br/sitemap/202208.xml',
+            'https://www.teses.usp.br/sitemap/202209.xml',
+            'https://www.teses.usp.br/sitemap/202210.xml',
+            'https://www.teses.usp.br/sitemap/202211.xml',
+            'https://www.teses.usp.br/sitemap/202212.xml',
+            'https://www.teses.usp.br/sitemap/202301.xml',
+            'https://www.teses.usp.br/sitemap/202302.xml',
+            'https://www.teses.usp.br/sitemap/202303.xml',
+            'https://www.teses.usp.br/sitemap/202304.xml',
+            'https://www.teses.usp.br/sitemap/202305.xml',
+            'https://www.teses.usp.br/sitemap/202306.xml'
+        ]
+
+        queue: Queue[Webpage] = Queue()  # Queue to crawl
+        for url in sitemap_urls:
+            try:
+                response = self.session.get(url)
+                if not response.ok:
+                    raise Exception(f"Request Error @ url {url}. Status Code: {response.status_code}")
+                encoding = chardet.detect(response.content)['encoding']
+                response.encoding = encoding
+
+                self.logger.info(f"Parsing url: {url}")
+                xml_soup = BeautifulSoup(response.content, "xml")
+            except Exception as e:
+                self.logger.error(f"Error while requesting and parsing: {url}")
+                self._err_database_insert(url, str(e))
+                continue
+
+            for child_url in (loc.text for loc in xml_soup.find_all("loc")):
+                try:
+                    webpage = Webpage(child_url)
+                    if self._database_contains_webpage(webpage):
+                        self.logger.info(f"Database already contains url: {child_url}. Continuing.")
+                        continue
+
+                    self.logger.info(f"Inserting in database: {webpage.url}")
+                    self._database_insert_webpage(webpage)
+
+                    self.logger.info(f"Putting in queue: {child_url}")
+                    queue.put(webpage)
+                except Exception as e:
+                    self.logger.error(f"Could not parse webpage: {child_url}")
+                    self._err_database_insert(child_url, str(e))
+
+        while not queue.empty():
+            webpage: Webpage = queue.get()
+            try:
+                self.logger.info(f"Processing Webpage object: {webpage}.")
+                webpage.process(self.session)
+            except (requests.exceptions.RequestException, requests.exceptions.ConnectionError):
+                self._session_setup()
+                webpage.delete_cache()
+                queue.put(webpage)
+            except Exception as e:
+                self.logger.error(f"Error while processing webpage: {webpage.url}")
+                self._err_database_insert(webpage.url, str(e))
+                continue
+
+            if webpage.is_metadata:
+                metadata: Metadata = Metadata(webpage)
+                try:
+                    self._database_insert_metadata(metadata)
+                except Exception as e:
+                    self.logger.error(f"Unable to store metadata for {metadata.url} in database. Error: {e}")
+                    self._err_database_insert(metadata.url, f"{e}")
+                    continue
+
+            self._database_update_crawled(webpage)
 
     def stop(self, exit_code=0) -> None:
-        self.logger.info("STOPING CRAWLER")
+        self.logger.info("Stoping crawler")
         self.conn.close()
         self.err_conn.close()
         sys.exit(exit_code)
+
+    def _session_setup(self):
+        self.session = requests.Session()
+        self.session.headers.update({"Accept-Language": "pt-br,pt-BR"})
 
     def _logging_setup(self, logs_path):
         logging.basicConfig(
@@ -124,11 +247,12 @@ class Crawler:
     def _execute_preprocess(self, queue: Queue[Webpage], queued: set[Webpage]):
         if self.cursor.execute("SELECT url FROM webpages LIMIT 1").fetchone() is None:
             self.logger.info("Database empty. Starting crawl from config.BASE_URL.")
-            success, err = self._database_insert_webpage(config.BASE_URL)
-            if not success:
-                self.logger.error("Execute preprocess error: 'Could not insert to database'")
-                self.stop(1)
             webpage = Webpage(config.BASE_URL)
+            try:
+                self._database_insert_webpage(webpage)
+            except Exception as e:
+                self.logger.error(f"Execute preprocess error: 'Could not insert to database': {e}")
+                self.stop(1)
             queue.put(webpage)
             queued.add(webpage)
         else:
@@ -140,10 +264,13 @@ class Crawler:
                 if not crawled:
                     queue.put(webpage)
 
-    def _database_select_instance(self, column: str, value: str) -> tuple:
+    def _database_select_instance(self, column: str, value: str) -> Optional[tuple]:
         query = f"SELECT * FROM webpages WHERE {column} = ?"
         self.cursor.execute(query, (value, ))
         return self.cursor.fetchone()
+
+    def _database_contains_webpage(self, webpage: Webpage) -> bool:
+        return self._database_select_instance("url", webpage.url) is not None
 
     def _database_update_crawled(self, webpage: Webpage) -> None:
         self.cursor.execute("""UPDATE webpages SET crawled = 1 WHERE url = ?;""", (webpage.url,))
@@ -166,60 +293,49 @@ class Crawler:
         except Exception as e:
             self.logger.error(f"Unable to store error in error database. Error: {e}.")
 
-    def _database_insert_webpage(self, webpage: Webpage) -> bool:
-        try:
-            self.cursor.execute("INSERT INTO webpages VALUES(?, ?, ?, ?)",
-                                (webpage.url, webpage.is_metadata, webpage.is_document, 0)  # crawled = 0
-                                )
-            self.conn.commit()
-            return True
-        except Exception as e:
-            self.logger.error(f"Unable to store {webpage.url} in database. Error: {e}")
-            self._err_database_insert(webpage.url, f"{e}")
-            return False
+    def _database_insert_webpage(self, webpage: Webpage) -> None:
+        self.cursor.execute(
+            "INSERT INTO webpages VALUES(?, ?, ?, ?)",
+            (webpage.url, webpage.is_metadata, webpage.is_document, 0)  # crawled = 0
+        )
+        self.conn.commit()
 
-    def _database_insert_metadata(self, metadata: Metadata) -> bool:
-        try:
-            self.cursor.execute("""
-                INSERT INTO metadata (
-                    url, 
-                    doi, 
-                    type, 
-                    author, 
-                    institute, 
-                    knowledge_area, 
-                    committee, 
-                    title_pt, 
-                    title_en, 
-                    keywords_pt, 
-                    keywords_en, 
-                    abstract_pt, 
-                    abstract_en, 
-                    publish_date
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                metadata.url,
-                metadata.doi,
-                metadata.type,
-                metadata.author,
-                metadata.institute,
-                metadata.knowledge_area,
-                metadata.committee,
-                metadata.title_pt,
-                metadata.title_en,
-                metadata.keywords_pt,
-                metadata.keywords_en,
-                metadata.abstract_pt,
-                metadata.abstract_en,
-                metadata.publish_date
-            ))
-            self.conn.commit()
-            return True
-        except Exception as e:
-            self.logger.error(f"Unable to store metadata for {metadata.url} in database. Error: {e}")
-            self._err_database_insert(metadata.url, f"{e}")
-            return False
+    def _database_insert_metadata(self, metadata: Metadata) -> None:
+        self.cursor.execute("""
+            INSERT INTO metadata (
+                url, 
+                doi, 
+                type, 
+                author, 
+                institute, 
+                knowledge_area, 
+                committee, 
+                title_pt, 
+                title_en, 
+                keywords_pt, 
+                keywords_en, 
+                abstract_pt, 
+                abstract_en, 
+                publish_date
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            metadata.url,
+            metadata.doi,
+            metadata.type,
+            metadata.author,
+            metadata.institute,
+            metadata.knowledge_area,
+            metadata.committee,
+            metadata.title_pt,
+            metadata.title_en,
+            metadata.keywords_pt,
+            metadata.keywords_en,
+            metadata.abstract_pt,
+            metadata.abstract_en,
+            metadata.publish_date
+        ))
+        self.conn.commit()
 
 
 if __name__ == "__main__":
@@ -230,5 +346,6 @@ if __name__ == "__main__":
         db_name=config.WEBPAGES_DATABASE,
         err_db_name=config.ERRORS_DATABASE,
     )
-    crawler.start()
+    # crawler.start()
+    crawler.crawl_sitemap()
     crawler.stop()
