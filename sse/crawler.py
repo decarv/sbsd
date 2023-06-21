@@ -156,15 +156,15 @@ class Crawler:
             for child_url in (loc.text for loc in xml_soup.find_all("loc")):
                 try:
                     webpage = Webpage(child_url)
-                    if self._database_contains_webpage(webpage):
+                    if not self._database_contains_webpage(webpage.url):
+                        self.logger.info(f"Inserting in database: {webpage.url}")
+                        self._database_insert_webpage(webpage)
+                    else:
                         self.logger.info(f"Database already contains url: {child_url}. Continuing.")
-                        continue
 
-                    self.logger.info(f"Inserting in database: {webpage.url}")
-                    self._database_insert_webpage(webpage)
-
-                    self.logger.info(f"Putting in queue: {child_url}")
-                    queue.put(webpage)
+                    if not self._database_contains_metadata(webpage.url):
+                        self.logger.info(f"Queueing: {child_url}")
+                        queue.put(webpage)
                 except Exception as e:
                     self.logger.error(f"Could not parse webpage: {child_url}")
                     self._err_database_insert(child_url, str(e))
@@ -174,17 +174,26 @@ class Crawler:
             try:
                 self.logger.info(f"Processing Webpage object: {webpage}.")
                 webpage.process(self.session)
-            except (requests.exceptions.RequestException, requests.exceptions.ConnectionError):
+            except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
+                self.logger.error(f"Error while requesting url: {webpage.url}. Error: {e}")
+                self._err_database_insert(webpage.url, str(e))
                 self._session_setup()
                 webpage.delete_cache()
                 queue.put(webpage)
+                continue
             except Exception as e:
                 self.logger.error(f"Error while processing webpage: {webpage.url}")
                 self._err_database_insert(webpage.url, str(e))
                 continue
 
             if webpage.is_metadata:
-                metadata: Metadata = Metadata(webpage)
+                try:
+                    metadata: Metadata = Metadata(webpage)
+                except Exception as e:
+                    self.logger.error(f"Unable to parse metadata for {webpage.url}. Error: {e}")
+                    self._err_database_insert(webpage.url, f"{e}")
+                    continue
+
                 try:
                     self._database_insert_metadata(metadata)
                 except Exception as e:
@@ -227,7 +236,7 @@ class Crawler:
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS metadata (
                 url TEXT PRIMARY KEY,
-                doi TEXT,
+                doi TEXT UNIQUE,
                 type TEXT,
                 author TEXT,
                 institute TEXT,
@@ -264,13 +273,16 @@ class Crawler:
                 if not crawled:
                     queue.put(webpage)
 
-    def _database_select_instance(self, column: str, value: str) -> Optional[tuple]:
-        query = f"SELECT * FROM webpages WHERE {column} = ?"
+    def _database_select_instance(self, table: str, column: str, value: str) -> Optional[tuple]:
+        query = f"SELECT * FROM {table} WHERE {column} = ?"
         self.cursor.execute(query, (value, ))
         return self.cursor.fetchone()
 
-    def _database_contains_webpage(self, webpage: Webpage) -> bool:
-        return self._database_select_instance("url", webpage.url) is not None
+    def _database_contains_webpage(self, url: str) -> bool:
+        return self._database_select_instance("webpages", "url", url) is not None
+
+    def _database_contains_metadata(self, url: str) -> bool:
+        return self._database_select_instance("metadata", "url", url) is not None
 
     def _database_update_crawled(self, webpage: Webpage) -> None:
         self.cursor.execute("""UPDATE webpages SET crawled = 1 WHERE url = ?;""", (webpage.url,))
@@ -281,7 +293,8 @@ class Crawler:
         self.err_cursor = self.err_conn.cursor()
         self.err_cursor.execute("""
             CREATE TABLE IF NOT EXISTS crawler (
-                url TEXT PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT,
                 error TEXT
             );
         """)
@@ -340,9 +353,9 @@ class Crawler:
 
 if __name__ == "__main__":
     crawler = Crawler(
-        data_path=config.DATA_PATH,
-        logs_path=config.LOGS_PATH,
-        err_path=config.ERRORS_PATH,
+        data_path=config.DATA_DIR,
+        logs_path=config.LOGS_DIR,
+        err_path=config.ERRORS_DIR,
         db_name=config.WEBPAGES_DATABASE,
         err_db_name=config.ERRORS_DATABASE,
     )
