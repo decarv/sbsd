@@ -15,6 +15,7 @@ from models.metadata import Metadata
 
 
 class Crawler:
+    """TODO"""
     def __init__(self, **kwargs):
         """
         Initializes the crawler with necessary parameters and establishes a database connection.
@@ -266,7 +267,7 @@ class Crawler:
             queued.add(webpage)
         else:
             self.logger.info("Database not empty. Adding visited urls to visited set and to queue.")
-            query = self.cursor.execute("SELECT url, crawled FROM webpages")
+            query = self.cursor.execute("SELECT url, crawled FROM webpages;")
             for url, crawled in query.fetchall():
                 webpage = Webpage(url)
                 queued.add(webpage)
@@ -274,7 +275,7 @@ class Crawler:
                     queue.put(webpage)
 
     def _database_select_instance(self, table: str, column: str, value: str) -> Optional[tuple]:
-        query = f"SELECT * FROM {table} WHERE {column} = ?"
+        query = f"SELECT * FROM {table} WHERE {column} = ?;"
         self.cursor.execute(query, (value, ))
         return self.cursor.fetchone()
 

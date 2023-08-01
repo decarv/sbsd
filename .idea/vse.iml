@@ -10,11 +10,9 @@
     <content url="file://$MODULE_DIR$/docs/references">
       <excludeFolder url="file://$MODULE_DIR$/docs/references" />
     </content>
-    <content url="file://$MODULE_DIR$/experiments">
-      <excludeFolder url="file://$MODULE_DIR$/experiments" />
-    </content>
-    <content url="file://$MODULE_DIR$/sse">
-      <sourceFolder url="file://$MODULE_DIR$/sse" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/src">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/src/deprecated" />
     </content>
     <content url="file://$MODULE_DIR$/tests">
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />

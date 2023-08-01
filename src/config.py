@@ -3,6 +3,13 @@ import os
 BASE_URL = "https://www.teses.usp.br"
 SITEMAP = "https://www.teses.usp.br/sitemap.xml"
 
+# Search configuration
+THESES_QUERY_URL: str = (
+        "https://teses.usp.br/index.php?option=com_jumi&fileid=19"
+        "&Itemid=87&lang=pt&g=1&b3={}&c3=p&o3=AND"
+)
+EXPERIMENT_RESULT_LENGTH: int = 30
+
 # Global configuration
 DATA_DIR = os.path.abspath("../data")
 LOGS_DIR = os.path.abspath("../logs")
