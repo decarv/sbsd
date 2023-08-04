@@ -15,16 +15,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import os
 import time
 import logging
+import sqlite3
 from typing import Optional
 import requests
 import functools
 
+from models import Metadata
+from config import DATA_DIR, DATABASE
 
 def log(level=logging.INFO):
     """
-    Creates a sort of automatic logging for
+    Creates a sort of automatic logging for functions.
 
     Usage:
 
@@ -119,3 +123,12 @@ def post_request(
 
     # logging.ERROR(f"Failed to request the URI after {max_attempts} attempts")
     return None
+
+
+@log(logging.DEBUG)
+def load_metadata() -> list[Metadata]:
+    conn = sqlite3.connect(os.path.join(DATA_DIR, DATABASE))
+    res: list[Metadata] = []
+    instances = conn.cursor().execute("select * from metadata").fetchall()
+    for inst in instances:
+        m = Metadata()

@@ -357,7 +357,7 @@ if __name__ == "__main__":
         data_path=config.DATA_DIR,
         logs_path=config.LOGS_DIR,
         err_path=config.ERRORS_DIR,
-        db_name=config.WEBPAGES_DATABASE,
+        db_name=config.DATABASE,
         err_db_name=config.ERRORS_DATABASE,
     )
     # crawler.start()

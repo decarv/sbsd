@@ -4,6 +4,9 @@ from models.webpage import Webpage
 
 
 class Metadata:
+    """
+    TODO: documentation
+    """
     def __init__(self, webpage: Webpage):
         self.url: str
         self.doi: str
@@ -26,6 +29,11 @@ class Metadata:
         return str(self.__dict__)
 
     def parse_metadata(self, webpage):
+        """
+        TODO: documentation
+        :param webpage:
+        :return:
+        """
         self.url = webpage.url
         raw_metadata = webpage.soup.find_all(class_="DocumentoTexto")
         raw_metadata_keys = webpage.soup.find_all(class_="DocumentoTituloTexto")
@@ -53,3 +61,10 @@ class Metadata:
         }
         self.abstract_pt = data.get("resumo em português", None)
         self.abstract_en = data.get("resumo em inglês", None)
+
+    def to_dict(self):
+        return {
+            "title": self.title_pt,
+            "author": self.author,
+            "knowledge_area": self.knowledge_area,
+        }

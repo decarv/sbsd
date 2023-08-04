@@ -1,8 +1,14 @@
 .idea/workspace.xml
-data/
 *.__pycache__/
 *__pycache__/
 *.ipynb_checkpoints/
 venv/
 experiments/demos/
 references/
+
+# data
+*.db
+*.npy
+*.csv
+*.model
+dataframe
