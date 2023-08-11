@@ -6,7 +6,7 @@ venv/
 experiments/demos/
 references/
 
-# data
+data/
 *.db
 *.npy
 *.csv
