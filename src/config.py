@@ -6,6 +6,8 @@ LOGS_DIR = os.path.abspath("../logs")
 ERRORS_DIR = os.path.abspath("../data")
 DATABASES_DIR = os.path.abspath("../data/databases")
 VECTORS_DIR = os.path.abspath("../data/npy")
+EMBEDDINGS_DIR = os.path.abspath("../data/embeddings")
+INDICES_DIR = os.path.abspath("../data/indices")
 
 DATABASE = os.path.join(DATABASES_DIR, "database.db")
 ERRORS_DATABASE = os.path.join(DATABASES_DIR, "errors.db")
@@ -28,7 +30,8 @@ COLLECTIONS = [
 ]
 
 MODELS = [
-        "distilbert-base-nli-stsb-mean-tokens"
+        "distilbert-base-nli-stsb-mean-tokens",
+        "neuralmind/bert-base-portuguese-cased"
 ]
 
 HOST = "0.0.0.0"

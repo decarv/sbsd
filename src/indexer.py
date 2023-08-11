@@ -21,10 +21,9 @@ class Indexer:
     """
 
     def __init__(
-            self, collection_name: str, host: str, port: str, data_filename: str, vectors_filename:
-        str,
-            model_name: str,
-            documents: list[Metadata], embedding_size: int, distance: Distance = Distance.COSINE
+            self, collection_name: str, host: str, port: str,
+            data: pd.DataFrame, vectors: np.ndarray, model_name: str, documents: list[Metadata],
+            distance: Distance = Distance.COSINE
     ):
 
         self.collection_name = collection_name
@@ -32,21 +31,16 @@ class Indexer:
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = SentenceTransformer(model_name, device=device)
         self.client = QdrantClient(host, port)
-
         self.client.recreate_collection(
             collection_name=self.collection_name,
             vectors_config=VectorParams(
-                size=embedding_size,
+                size=self.model.get_sentence_embedding_dimension(),
                 distance=distance
             )
         )
 
-        data =
-        vectors_path = os.path.join(DATA_DIR, vectors_filename)
-        if not os.path.exists(vectors_path):
-            vectors = self.encode_documents(data_path, vectors_path)
-        else:
-            vectors = np.load(vectors_path)
+        self.data = data
+        self.vectors = vectors
 
         payload = pd.read_csv(os.path.join(DATA_DIR, "metadata_pt.csv")).to_dict(orient="records")
         self.client.upload_collection(

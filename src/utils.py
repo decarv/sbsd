@@ -1,5 +1,5 @@
 """
-utils.py
+utils
 
 Copyright (c) 2023 Henrique Araújo de Carvalho
 
@@ -16,17 +16,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import os
+import re
 import time
 import logging
 import sqlite3
-from typing import Optional
+from typing import Union, Optional
 import requests
 import functools
+import numpy as np
 
-from models import Metadata
+from models.metadata import Metadata
 from config import DATA_DIR, DATABASE
+import pickle
 
-def log(level=logging.INFO):
+LOGGING_LEVEL = logging.DEBUG
+LOGGING_FORMAT = '[ %(asctime)s ] - %(name)s - %(message)s'
+
+
+def log(func):
     """
     Creates a sort of automatic logging for functions.
 
@@ -37,27 +44,22 @@ def log(level=logging.INFO):
             ...
 
     """
-    logging.basicConfig(level=level)
+    logging.basicConfig(level=LOGGING_LEVEL, format=LOGGING_FORMAT, datefmt='%d/%m %H:%M:%S')
+    logger = logging.getLogger(func.__name__)
 
     # noinspection PyMissingOrEmptyDocstring
-    def inner_decorator(func):
-        logger = logging.getLogger(func.__name__)
-
-        # noinspection PyMissingOrEmptyDocstring
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                logger.info(f"Running {func.__name__}")
-                s = time.time()
-                ret = func(*args, **kwargs)
-                logger.info(f"{func.__name__} took {time.time() - s} seconds")
-                return ret
-            except Exception as e:
-                logger.error(f"Exception raised in function {func.__name__}. Exception: {e}")
-                raise e
-        return wrapper
-
-    return inner_decorator
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            logger.info(f"Running {func.__name__}")
+            s = time.time()
+            ret = func(*args, **kwargs)
+            logger.info(f"{func.__name__} took {time.time() - s} seconds")
+            return ret
+        except Exception as e:
+            logger.error(f"Exception raised in function {func.__name__}. Exception: {e}")
+            raise e
+    return wrapper
 
 
 def get_request(
@@ -125,10 +127,80 @@ def post_request(
     return None
 
 
-@log(logging.DEBUG)
 def load_metadata() -> list[Metadata]:
+    """TODO: documentation"""
     conn = sqlite3.connect(os.path.join(DATA_DIR, DATABASE))
     res: list[Metadata] = []
     instances = conn.cursor().execute("select * from metadata").fetchall()
     for inst in instances:
-        m = Metadata()
+        m = Metadata().parse_db_instance(inst)
+        res.append(m)
+    return res
+
+
+def embeddings_path(save_dir, model_name, units_type, language):
+    filename = f"{model_name}_{units_type}_{language}_embeddings.npy"
+    path = os.path.join(save_dir, filename)
+    return path
+
+
+def save_embeddings(embeddings, save_dir, model_name, units_type, language):
+    path = embeddings_path(save_dir, model_name, units_type, language)
+    np.save(
+        path,
+        embeddings,
+        allow_pickle=False
+    )
+
+
+def load_embeddings(save_dir, model_name: str, units_type: str, language: str):
+    path = embeddings_path(save_dir, model_name, units_type, language)
+    return np.load(path)
+
+
+def indices_path(save_dir, units_type):
+    filename = f"{units_type}_indices.pkl"
+    path = os.path.join(save_dir, filename)
+    return path
+
+
+def load_indices(save_dir, units_type):
+    path = indices_path(save_dir, units_type)
+    with open(path, "rb") as f:
+        return pickle.load(f)
+
+
+def save_indices(indices, save_dir, units_type):
+    path = indices_path(save_dir, units_type)
+    with open(path, "wb") as f:
+        pickle.dump(indices, f, pickle.HIGHEST_PROTOCOL)
+
+
+def batch_generator(data, batch_size=64):
+    """
+
+    :param self:
+    :param data:
+    :param batch_size:
+    :return:
+    """
+    for i in range(0, len(data), batch_size):
+        yield data[i:i+batch_size]
+
+
+def split_by_delimiters(string, delimiters: Union[list[str], str]) -> list[str]:
+    """
+    Splits the given string by one or multiple delimiters.
+
+    Args:
+        string: The string to be split
+        delimiters: A string or list of strings used as delimiters
+
+    Returns:
+        A list of substrings.
+    """
+    if isinstance(delimiters, list):
+        pattern = r"|".join(delimiters)
+    else:
+        pattern = r"{}".format(delimiters)
+    return re.split(pattern, string)

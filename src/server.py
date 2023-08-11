@@ -64,5 +64,5 @@ class Server:
 
         :return:
         """
-        results: list[dict] = self.search_client.search(query)
+        results: list[dict] = self.search_client.retrieve(query)
         return results
