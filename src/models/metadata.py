@@ -53,6 +53,9 @@ class Metadata:
         :param webpage:
         :return:
         """
+        if not webpage.is_processed:
+            raise Exception
+
         self.url = webpage.url
         raw_metadata = webpage.soup.find_all(class_="DocumentoTexto")
         raw_metadata_keys = webpage.soup.find_all(class_="DocumentoTituloTexto")
@@ -96,3 +99,6 @@ class Metadata:
             "author": self.author,
             "knowledge_area": self.knowledge_area,
         }
+
+    def __hash__(self):
+        return hash(self.doi)

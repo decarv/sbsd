@@ -158,20 +158,20 @@ def load_embeddings(save_dir, model_name: str, units_type: str, language: str):
     return np.load(path)
 
 
-def indices_path(save_dir, units_type):
-    filename = f"{units_type}_indices.pkl"
+def indices_path(save_dir, units_type, language):
+    filename = f"{units_type}_{language}_indices.pkl"
     path = os.path.join(save_dir, filename)
     return path
 
 
-def load_indices(save_dir, units_type):
-    path = indices_path(save_dir, units_type)
+def load_indices(save_dir, units_type, language):
+    path = indices_path(save_dir, units_type, language)
     with open(path, "rb") as f:
         return pickle.load(f)
 
 
-def save_indices(indices, save_dir, units_type):
-    path = indices_path(save_dir, units_type)
+def save_indices(indices, save_dir, units_type, language):
+    path = indices_path(save_dir, units_type, language)
     with open(path, "wb") as f:
         pickle.dump(indices, f, pickle.HIGHEST_PROTOCOL)
 

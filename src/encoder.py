@@ -104,7 +104,7 @@ class Encoder:
             # "sentences_and_text": text_embedding_unit + sentences_embedding_units
         }
 
-    def structure_data_for_embedding(self):
+    def structure_data_for_embedding(self, save=True):
         """
         TODO: Documentation
         - dict: Dictionary structured as:
@@ -123,9 +123,13 @@ class Encoder:
                 row[f"abstract_{self.language}"],
                 row[f"keywords_{self.language}"]
             )
-            for k in embedding_units.keys():
-                data_to_encode[k] += embedding_units[k]
-                indices[k] += [index for _ in range(len(embedding_units[k]))]
+            for units_type in embedding_units.keys():
+                data_to_encode[units_type] += embedding_units[units_type]
+                indices[units_type] += [index for _ in range(len(embedding_units[units_type]))]
+
+        if save and self.indices_dir:
+            for units_type, ids in indices.items():
+                save_indices(ids, self.indices_dir, units_type, self.language)
 
         return data_to_encode, indices
 
@@ -139,11 +143,10 @@ class Encoder:
         embeddings = np.concatenate(embeddings)
         return embeddings
 
+    @log
     def encode(self, save=True):
         """TODO: Documentation"""
         data_for_embedding, indices = self.structure_data_for_embedding()
-        if save and self.embeddings_dir:
-            save_indices(indices)
         self.encoded_data = {}
         for units_type, units in data_for_embedding.items():
             embeddings = self.encode_embedding_units(units)
@@ -161,6 +164,6 @@ if __name__ == "__main__":
         model_name=config.MODELS[0],
         embeddings_dir=config.EMBEDDINGS_DIR,
         indices_dir=config.INDICES_DIR,
-        language="en"
+        language="pt"
     )
-    encoder.encode()
+    encoder.structure_data_for_embedding()

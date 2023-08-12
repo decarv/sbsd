@@ -27,7 +27,7 @@ class Searcher:
         self.data = kwargs['data']
         self.indices = kwargs['indices']
 
-    def retrieve(self, query: str, filter_: dict = None) -> List[dict]:
+    def retrieve(self, query: str, filter_: dict = None) -> list[dict]:
         """
         This function is responsible for processing the query, retrieving and ranking
         the results of the retrieval.
@@ -72,7 +72,7 @@ class LocalSearcher(Searcher):
         super(LocalSearcher, self).__init__(*args, **kwargs)
 
     @log
-    def retrieve(self, query: str, hits_cnt: int = 30, filter_: dict = None) -> List[dict]:
+    def retrieve(self, query: str, hits_cnt: int = 30, filter_: dict = None) -> list[dict]:
         """
         This function is responsible for processing the query, retrieving and ranking
         the results of the retrieval.
@@ -83,7 +83,7 @@ class LocalSearcher(Searcher):
         vector: numpy.ndarray = self.process_query(query)
         [scores] = cosine_similarity(vector.reshape(1, -1), self.vectors)
         hits = np.argsort(scores)[::-1][:hits_cnt]
-        return [self.data.iloc[self.indices[i]] for i in hits]
+        return [self.data.iloc[self.indices[i]].to_dict() for i in hits]
 
     @log
     def process_query(self, query):

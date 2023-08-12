@@ -20,6 +20,7 @@ class Webpage:
         self.is_metadata: bool = False
         self.children_hyperlinks: list = []
 
+        self.is_processed: bool = False
 
         self._preprocess(link)
 
@@ -64,6 +65,7 @@ class Webpage:
         if self.html:
             self._get_soup()
             self._get_children_hyperlinks()
+        self.is_processed = True
 
     def _get_children_hyperlinks(self):
         a_tags = self.soup.find_all("a")

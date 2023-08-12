@@ -19,7 +19,7 @@ SITEMAP = "https://www.teses.usp.br/sitemap.xml"
 # Searcher configuration
 THESES_QUERY_URL: str = (
         "https://teses.usp.br/index.php?option=com_jumi&fileid=19"
-        "&Itemid=87&lang=pt&g=1&b3={}&c3=p&o3=AND"
+        "&Itemid=87&lang=pt&g=1&b3={}&c3=p&o3=AND&pagina="
 )
 RESULT_SIZE: int = 30
 
