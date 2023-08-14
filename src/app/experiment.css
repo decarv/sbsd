@@ -31,6 +31,7 @@ body {
     border-width: 3px; /* Slightly thinner border */
     border-style: solid; /* Solid border */
     flex-grow: 1; /* Flex grow to fill available space */
+    min-width: 45%;
 }
 
 /* Specific styles for the right column (optional, add if needed) */

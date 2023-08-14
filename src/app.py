@@ -3,7 +3,7 @@ import random
 import requests
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer
 
@@ -52,21 +52,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/website", StaticFiles(directory="website"), name="static")
+app.mount("/app", StaticFiles(directory="app"), name="static")
 
 @app.get("/search")
 async def search():
-    return FileResponse("website/search.html")
+    return FileResponse("app/search.html")
 
 @app.get("/experiment")
 async def experiment(query: str):
     """TODO: documentation"""
+
+
+
     half_total_size = config.RESULT_SIZE//2
     website_results: list[dict] = website_query(query, hits_cnt=half_total_size)
     # TODO DEBUG: delete after testing
-    return {
-        "results": website_results
-    }
+    html_page = generate_experiment_html(website_results)
+    print(html_page)
+    return HTMLResponse(content=html_page)
+
     engine_results: list[dict] = searcher.retrieve(query, hits_cnt=half_total_size)
 
     wr_idxs = list(range(len(website_results)))
@@ -87,9 +91,37 @@ async def experiment(query: str):
             results.append([er_j, engine_results[er_j]])
             results_set.add(engine_results[er_j]['url'])
 
-    return {
-        "result": results
-    }
+    return generate_experiment_html(results)
+
+def generate_experiment_html(results):
+    html_head = """<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Buscador de Teses</title>
+    <link rel="stylesheet" type="text/css" href="/app/experiment.css">
+</head>
+<body>
+    <div id="main-container">
+        <div id="left-column">"""
+
+    html_body = ""
+    for result in results:
+        html_body += f"""<div class="draggable" draggable="true">
+            <b>Título</b>: {result['title_pt']} <br>
+            <b>Resumo</b>: {result['abstract_pt']} <br>
+            <b>Autor</b>: {result['author']} <br>
+        </div>"""
+
+    html_tail = """        </div>
+        <div id="right-column" ondragover="allowDrop(event)" ondrop="drop(event)">
+            <!-- This is where items will be dropped -->
+        </div>
+    </div>
+    <script src="/app/experiment.js"></script>
+</body>
+</html>"""
+    return html_head + html_body + html_tail
 
 
 @log
