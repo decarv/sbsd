@@ -93,11 +93,17 @@ class Metadata:
         return self
 
     def to_dict(self):
-        """TODO: documentation"""
+        """TODO: documentation
+        attributes = [attr for attr in dir(self) if not callable(getattr(self, attr)) and not attr.startswith("__")]
+            return {attr: getattr(self, attr) for attr in attributes}
+        """
         return {
-            "title": self.title_pt,
+            "title_pt": self.title_pt,
+            "title_en": self.title_en,
             "author": self.author,
-            "knowledge_area": self.knowledge_area,
+            "abstract_pt": self.abstract_pt,
+            "abstract_en": self.abstract_en,
+            "url": self.url
         }
 
     def __hash__(self):

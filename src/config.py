@@ -1,14 +1,17 @@
 import os
 
 # Global configuration
-DATA_DIR = os.path.abspath("../data")
-LOGS_DIR = os.path.abspath("../logs")
-ERRORS_DIR = os.path.abspath("../data")
-DATABASES_DIR = os.path.abspath("../data/databases")
-VECTORS_DIR = os.path.abspath("../data/npy")
-EMBEDDINGS_DIR = os.path.abspath("../data/embeddings")
-INDICES_DIR = os.path.abspath("../data/indices")
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SRC_DIR)
 
+DATA_DIR = os.path.join(PROJECT_DIR, "data")
+LOGS_DIR = os.path.join(PROJECT_DIR, "logs")
+ERRORS_DIR = os.path.join(PROJECT_DIR, "data")
+VECTORS_DIR = os.path.join(PROJECT_DIR, "data", "npy")
+EMBEDDINGS_DIR = os.path.join(PROJECT_DIR, "data", "embeddings")
+INDICES_DIR = os.path.join(PROJECT_DIR, "data", "indices")
+MODELS_DIR = os.path.join(PROJECT_DIR, "data", "models")
+DATABASES_DIR = os.path.join(PROJECT_DIR, "data", "databases")
 DATABASE = os.path.join(DATABASES_DIR, "database.db")
 ERRORS_DATABASE = os.path.join(DATABASES_DIR, "errors.db")
 

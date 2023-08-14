@@ -24,6 +24,7 @@ from typing import Union, Optional
 import requests
 import functools
 import numpy as np
+import pandas as pd
 
 from models.metadata import Metadata
 from config import DATA_DIR, DATABASE
@@ -127,7 +128,7 @@ def post_request(
     return None
 
 
-def load_metadata() -> list[Metadata]:
+def load_metadata_from_db() -> list[Metadata]:
     """TODO: documentation"""
     conn = sqlite3.connect(os.path.join(DATA_DIR, DATABASE))
     res: list[Metadata] = []
@@ -145,6 +146,7 @@ def embeddings_path(save_dir, model_name, units_type, language):
 
 
 def save_embeddings(embeddings, save_dir, model_name, units_type, language):
+    model_name = model_name.replace("/", "-")
     path = embeddings_path(save_dir, model_name, units_type, language)
     np.save(
         path,
@@ -154,6 +156,7 @@ def save_embeddings(embeddings, save_dir, model_name, units_type, language):
 
 
 def load_embeddings(save_dir, model_name: str, units_type: str, language: str):
+    model_name = model_name.replace("/", "-")
     path = embeddings_path(save_dir, model_name, units_type, language)
     return np.load(path)
 
@@ -164,7 +167,7 @@ def indices_path(save_dir, units_type, language):
     return path
 
 
-def load_indices(save_dir, units_type, language):
+def load_imap(save_dir, units_type, language):
     path = indices_path(save_dir, units_type, language)
     with open(path, "rb") as f:
         return pickle.load(f)
@@ -174,6 +177,11 @@ def save_indices(indices, save_dir, units_type, language):
     path = indices_path(save_dir, units_type, language)
     with open(path, "wb") as f:
         pickle.dump(indices, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_metadata_from_csv() -> pd.DataFrame:
+    metadata = pd.read_csv(os.path.join(DATA_DIR, "metadata.csv"), keep_default_na=False)
+    return metadata
 
 
 def batch_generator(data, batch_size=64):

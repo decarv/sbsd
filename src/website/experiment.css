@@ -1,0 +1,55 @@
+/* General styles for the main container and columns */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+#main-container,
+#left-column,
+#right-column {
+    border-radius: 10px; /* Round corners */
+    border-color: darkgray; /* Space gray color for borders */
+    padding: 10px; /* Padding inside the divs */
+    margin: 10px; /* Margin outside the divs */
+    background-color: #f4f4f4;
+
+}
+
+/* Specific styles for the main container */
+#main-container {
+    border-width: 3px; /* Thicker border */
+    border-style: solid; /* Solid border */
+    display: flex; /* Flexbox layout to arrange child divs horizontally */
+}
+
+/* Specific styles for the left and right columns */
+#left-column,
+#right-column {
+    border-width: 3px; /* Slightly thinner border */
+    border-style: solid; /* Solid border */
+    flex-grow: 1; /* Flex grow to fill available space */
+}
+
+/* Specific styles for the right column (optional, add if needed) */
+#right-column {
+    /* You can add specific styles for the right column here */
+}
+
+/* Styles for the draggable items */
+.draggable {
+    border-radius: 10px; /* Round corners */
+    border-color: darkgray; /* Space gray color for borders */
+    background-color: #d9d9d9; /* Light gray background color */
+    transition: background-color 0.3s; /* Transition effect for smooth color change */
+    border-width: 2px; /* Even thinner border */
+    border-style: solid; /* Solid border */
+    margin: 5px; /* Margin between items */
+    padding: 5px; /* Padding inside items */
+}
+
+.draggable:hover {
+    background-color: lightblue; /* Very light blue background color when hovered */
+}

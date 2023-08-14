@@ -20,12 +20,12 @@ class Searcher:
     def __init__(self, *args, **kwargs):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.collection_name = kwargs['collection_name']
-        self.embedding_model = kwargs['encoder_model']
+        self.encoder_model = kwargs['encoder_model']
         self.ranking_model = kwargs['ranking_model']
         self.language = kwargs['language']
-        self.vectors = kwargs['vectors']
+        self.embeddings = kwargs['embeddings']
         self.data = kwargs['data']
-        self.indices = kwargs['indices']
+        self.imap = kwargs['imap']
 
     def retrieve(self, query: str, filter_: dict = None) -> list[dict]:
         """
@@ -81,9 +81,9 @@ class LocalSearcher(Searcher):
         :return:
         """
         vector: numpy.ndarray = self.process_query(query)
-        [scores] = cosine_similarity(vector.reshape(1, -1), self.vectors)
+        [scores] = cosine_similarity(vector.reshape(1, -1), self.embeddings)
         hits = np.argsort(scores)[::-1][:hits_cnt]
-        return [self.data.iloc[self.indices[i]].to_dict() for i in hits]
+        return [self.data.iloc[self.imap[i]].to_dict() for i in hits]
 
     @log
     def process_query(self, query):
@@ -93,7 +93,7 @@ class LocalSearcher(Searcher):
         :param query:
         :return:
         """
-        vector: numpy.ndarray = self.embedding_model.encode(query)
+        vector: numpy.ndarray = self.encoder_model.encode(query, show_progress_bar=False)
         return vector
 
     @log
@@ -151,7 +151,7 @@ class QdrantSearcher(Searcher):
         :param query:
         :return:
         """
-        vector: list = self.embedding_model.encode(query).tolist()
+        vector: list = self.encoder_model.encode(query).tolist()
         return vector
 
     @log
