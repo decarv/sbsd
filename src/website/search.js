@@ -12,9 +12,9 @@ document.getElementById("search-form").addEventListener("submit", function(e) {
                 resultDiv.className = 'draggable';
                 resultDiv.draggable = true;
                 resultDiv.textContent = `
-                    Título: ${result['title']}
+                    Título: ${result['title_pt']}
                     Resumo: ${result['abstract_pt']}
-                    Autor: ${result['author_pt']}
+                    Autor: ${result['author']}
                 `;
                 container.appendChild(resultDiv);
             });
