@@ -50,6 +50,7 @@ class Metadata:
     def parse_metadata(self, webpage):
         """
         TODO: documentation
+            - add data cleaning
         :param webpage:
         :return:
         """
@@ -65,7 +66,10 @@ class Metadata:
         }
         self.doi = metadata.get("doi", None)
         self.type = metadata.get("documento", None)
-        self.author = metadata.get("autor", None)
+        self.author = metadata.get("autor", None) # TODO: add data cleaning "Catalogo USP"
+
+
+
         self.institute = metadata.get("unidade da usp", None)
         self.knowledge_area = metadata.get("área do conhecimento", None)
         self.committee = metadata.get("banca examinadora", None)

@@ -1,6 +1,6 @@
 beautifulsoup4==4.10.0
 chardet==4.0.0
-fastapi==0.101.0
+fastapi==0.101.1
 gradio==3.40.1
 moviepy==1.0.3
 numpy==1.25.2
