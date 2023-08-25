@@ -1,6 +1,5 @@
 import bs4
 import random
-import requests
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
@@ -9,8 +8,6 @@ from sentence_transformers import SentenceTransformer
 
 from models.webpage import Webpage
 from models.metadata import Metadata
-from utils import get_request
-from config import RESULT_SIZE
 from searcher import Searcher
 
 
@@ -56,7 +53,7 @@ app.mount("/app", StaticFiles(directory="app"), name="static")
 
 @app.get("/search")
 async def search():
-    return FileResponse("app/search.html")
+    return FileResponse("search.html")
 
 @app.get("/experiment")
 async def experiment(query: str):

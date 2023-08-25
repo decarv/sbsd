@@ -21,13 +21,16 @@ import time
 import logging
 import sqlite3
 from typing import Union, Optional
+
+import psycopg2
 import requests
 import functools
 import numpy as np
 import pandas as pd
 
 from models.metadata import Metadata
-from config import DATA_DIR, DATABASE
+from config import DATA_DIR, DATABASE, POSTGRESQL_DB_NAME, POSTGRESQL_DB_USER, POSTGRESQL_DB_PASSWORD, \
+    POSTGRESQL_DB_HOST, POSTGRESQL_DB_PORT
 import pickle
 
 LOGGING_LEVEL = logging.DEBUG
@@ -130,12 +133,21 @@ def post_request(
 
 def load_metadata_from_db() -> list[Metadata]:
     """TODO: documentation"""
-    conn = sqlite3.connect(os.path.join(DATA_DIR, DATABASE))
+    conn = psycopg2.connect(
+        dbname=POSTGRESQL_DB_NAME,
+        user=POSTGRESQL_DB_USER,
+        password=POSTGRESQL_DB_PASSWORD,
+        host=POSTGRESQL_DB_HOST,
+        port=POSTGRESQL_DB_PORT
+    )
     res: list[Metadata] = []
-    instances = conn.cursor().execute("select * from metadata").fetchall()
-    for inst in instances:
-        m = Metadata().parse_db_instance(inst)
-        res.append(m)
+    instances = conn.cursor().execute("select * from metadata")
+    if instances is not None:
+        instances = instances.fetchall()
+        for inst in instances:
+            m = Metadata().parse_db_instance(inst)
+            res.append(m)
+        conn.close()
     return res
 
 

@@ -1,0 +1,207 @@
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\title{Embeddings}
+
+Semântica vetorial (vector semantics) é o nome que se dá à forma padrão de representar texto por meio de vetores.
+As raízes que baseiam a mais atual semântica vetorial nasceram nos anos 50, quando foram propostas ideias de representar
+o significado de uma palavra por meio de sua distribuição no uso da linguagem e de representar essa distribuição por
+meio de um vetor tridimensional.
+Por distribuição da palavra na linguagem, quer-se dizer a forma que ela ocorre no uso, sua posição
+em uma frase, por exemplo, e essa relação com as demais palavras.
+Palavras que ocorrem na mesma posição na frase, têm, assim,
+similaridade semântica, talvez elas sejam palavras sinônimas, ou talvez elas carreguem algum sentido comum quando
+usadas.
+A ideia por trás da semântica vetorial é representar palavras como um ponto em um espaço multidimensional
+derivado das distribuições de vizinhanças.
+[3]
+
+Embeddings é o nome que se dá aos vetores que representam semanticamente as palavras, criados através de modelos que
+capturam a distribuição de palavras da linguagem.
+Existem diversos métodos de geração de embeddings.
+Os mais usados atualmente são vetores esparsos gerados por tf-idf ou PPMI e vetores densos gerados pela
+família de modelos do word2vec.
+A grande vantagem desses métodos utilizados é que eles conseguem gerar embeddings sem supervisão.
+[3]
+
+Esses embeddings são geralmente baseados em uma matriz de co-ocorrência, uma forma de representar a ocorrência de um
+termo em relação a um documento (matrizes de termo-documento) ou em relação a outros termos (matrizes de termo-termo).
+[3]
+
+Em matrizes de termo-documento, documentos são caracterizados pela frequência dos termos que possui e palavras são caracterizadas
+pelos documentos em que ocorrem.
+Para cada linha $i$ da matriz representar uma palavra e cada coluna $j$ representar
+um documento, sendo o valor $M\index{i,j}$ a frequência da palavra P na linha $i$ em um documento D na coluna $j$.
+Assim, cada vetor de palavra tem dimensão |D| e cada vetor de documento tem dimensão |V| e a comparação entre dois documentos
+se dá pela similaridade de vetores coluna e a comparação de sentido de duas palavras se dá pela similaridade de vetores linha.
+Essas comparações se baseiam na crença de que duas palavras similares ocorrem em um mesmo contexto e que documentos similares
+possuem uma distribuição de palavras parecida.
+[COMENTÁRIO: em análise lexica, qual a diferença entre sentido e significado?]
+Uma consequência desse tipo de representação é que o número de linhas é igual ao tamanho do vocabulário e o número de colunas
+é igual ao número de documentos.
+Notadamente essa representação ocupa um espaço proporcional a |P| x |D| e é esparsa, já que a distribuição de palavras por documento e
+a distruição de documentos em cada palavra é pequena quando comparada à quantidade de documentos e ao tamanho do vocabulário.
+Usar essa representação para recuperação de informação exige pensar em armazenamento e recuperação de matrizes com essas
+características específicas.
+[3]
+
+Em matrizes termo-termo, termos são relacionados com outros termos que ocorrem no mesmo contexto.
+Nesse caso, cada palavra P ocupa uma linha i e uma coluna j, ou seja, cada vetor de palavra tem dimensão |P|, e o valor $Mi,j$ é a frequência em que uma palavra ocorre no
+mesmo contexto de outra.
+Um contexto é definido como uma janela de $k$ palavras na mesma sentença e a ocorrência no mesmo contexto é medida como
+$(k-1)/2$ palavras à direita e $(k-1)/2$ palavras à esquerda.
+Essa representação ocupa um espaço proporcional a |P| x |P| e também é esparsa.
+[3]
+
+Entretanto, a análise crua da frequência de termos por documento ou por termos não é representativa da similaridade
+entre as documentos ou entre palavras.
+
+No caso de documentos, são dois motivos.
+Primeiro, a alta frequência de uma palavra em um documento pode afetar desproporcionalmente uma comparação entre documentos
+simplesmente por um documento ter mais palavras que o outro.
+Segundo, algumas palavras, como artigos, aparecem com muita frequência em documentos e não
+carregam grande significado semântico que possa ser usado para extrair relações de similaridade.
+Por esses motivos, necessita-se de uma medida, baseada nos valores das frequências, que passe a representar
+a importância de uma palavra para um documento.
+Uma medida comum é a Term Frequency Inverse Document Frequency (tf-idf), que busca resolver os dois problemas acima ao criar
+um peso $w_{t,d}$ para um termo t e um documento d, por meio do produto $tf_{t,d} \times idf_{t}$, em que $tf_{t,d}$ é
+a frequência normalizada do termo t no documento d, e $idf_{t}$ é o total de documentos dividido pelo número de documentos
+em que o termo ocorre.
+$\text{TF}(t, d) = \frac{f_{t, d}}{\sum_{t' \in d} f_{t', d}}$
+$\text{IDF}(t) = \log \frac{N}{\text{DF}(t)}$
+\begin{align*}
+\text{TF-IDF}(t, d) &= \text{TF}(t, d) \times \text{IDF}(t) \\
+&= \frac{f_{t, d}}{\sum_{t' \in d} f_{t', d}} \times \log \frac{N}{\text{DF}(t)}
+\end{align*}
+
+No caso de termos, um motivo.
+Palavras muito frequentes em todos os contextos representam alto ruído (assim como no caso de documentos), mas não carregam
+grande significado semântico.
+Nesse caso, a medida usada para resolver esse problema entre termos é Pointwise Mutual Information (PMI), que objetiva
+calcular a probabilidade em que duas palavras aparecem em um contexto em relação à probabilidade que seria esperado encontrar essas palavras em um
+mesmo contexto, dado que elas são independentes.
+Isso é representado por um cálculo de probabilidades, em que p(x,y) é a probabilidade conjunta de aparecerem os termos x e y
+em um mesmo contexto e p(x) e p(y) são as probabilidades marginais de x e y ocorrerem, respectivamente.
+Sabendo que, para t e w termos de uma coleção, $p(t) = \frac{count(t)}{\sum{w}count(w)}$,
+$\text{PMI}(x, y) = \log \frac{p(x, y)}{p(x) \cdot p(y)}$
+Como a relação de co-ocorrência entre termos é simétrica, pode-se interpretar as dimensões de um vetor linha da matriz de co-ocorrência
+termo-termo como sendo contextos, o que faz dessa uma matriz de co-ocorrência termo-contexto.
+Assim, para um termo t e um contexto c,
+$\text{PMI}(t,c) = \log \frac{p(t,c)}{p(t) \cdot p(c)}$
+Como o valor de PMI pode ser negativo, algo a que não se consegue atribuir um sentido no caso de similaridade entre termo
+e contexto, usa-se a medida Positive PMI (PPMI), calculada como
+$\text{PPMI}(x, y) = \max \left(0, \log \frac{p(x, y)}{p(x) \cdot p(y)}\right)$
+Essa medida tem a tendência de ser enviesada para contextos pouco frequentes (imagine p(c) << 1).
+Uma forma de corrigir isso é computar a probabilidade por meio da função $P_{\alpha}(c)$, em que se eleva a probabilidade
+de um contexto à $\alpha$ potência, com o objetivo de
+``aumentar a probabilidade de contextos raros e diminuir o PMI ($P_{\alpha} > P(c)$ quando $c$ é raro)'' [4].
+
+%[COMENTÁRIO: mas isso nao considera o tamanho do documento... Eu entendo que squash com logaritmo acaba normalizando tambem,
+%mas a ideia deveria ser normalizar dentro de um documento, pegar a frequencia dentro do documento.]
+%pequenas diferenças de frequência de uma palavra entre documentos não deveria representar grandes diferenças
+%em similaridade.
+%É mais interessante, assim, modificar a escala para graduar uma palavra por sua frequência do documento apenas quando ela
+%for extremamente frequente.
+
+
+AINDA TEMOS OS EMBEDDINGS GERADOS POR WORD2VEC AND SO ON....
+
+
+\title{Similaridade entre Embeddings}
+
+Em posse dos embeddings, a similaridade pode ser medida através de operações de álgebra linear.
+Uma forma comum de medir a similaridade entre dois vetores é através do produto vetorial.
+$dot(u,v) = u.v = \sum{N, i=1}v_{i}w_{i}$
+O produto vetorial acima apresenta uma medida de quanto um vetor $u$ está no mesmo sentido e direção de outro vetor $v$.
+O problema de realizar medições com o produto vetorial é comparar similaridades, pois $dot(u,v)$ pode ser arbitrariamente
+grande ou pequeno a depender dos valores dos embeddings.
+O mais sensato é comparar esses vetores normalizados, o que resulta no cosseno entre os vetores e leva todas as comparações
+a um espaço entre 0 e 1, considerando que os valores dos embeddings não assumem valores negativos.
+$\cos \theta = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}$
+Assim, é possível comparar similaridades entre diferentes embeddings de palavras.
+Quanto mais próximo de 1 for o resultado, mais similares são os termos comparados.
+Essa técnica functiona tanto para os pesos calculados através de tf-idf, PPMI ou word2vec.
+No caso de tf-idf, para calcular a similaridade entre documentos, pode-se calcular o centróide do documento, dado por
+$d = \frac{\sum{i}w_{i}}{k}$
+Por exemplo,
+
+%[TODO: CRIAR UM EXEMPLO EM PYTHON E USAR].
+
+\title{Recuperação de Informação}
+
+Em [1], recuperação de informação é definida como a disciplina que estuda como encontrar documentos relevantes em dados 
+desestruturados a partir de uma consulta.
+
+A recuperação é tratada como a disciplina porque se trata de todo um ramo de conhecimento, englobando diversos conteúdos 
+ou sistemas, envolvendo diferentes tipos de dados e formas de existência. Esta disciplina engloba, por exemplo, mecanismos 
+(motores) de busca, sistemas de filtragem de informação, sumarização de documentos, QA systems e sistemas de recomendação.
+
+[Buscar mais sobre dados desestruturados]
+A disciplina se debruça sobre a recuperação de informação, e não recuperação de dados, a partir de fontes de dados desestruturados. 
+Em [1], recuperação de dados é separado de recuperação de informação. No caso da recuperação de dados, existe uma forma expressa e bem definida de recuperação, expressada de maneira formal.
+Isso significa dizer que, em oposição a dados facilmente estruturáveis, ou que podem dispor de uma estrutura tabelar ou relacional, 
+a disciplina se preocupa com a extração de significado a partir de dados que não são facilmente interpretáveis, analisáveis, separáveis algoriticamente. 
+Não se trata, aqui, do estudo que envolve a mera obtenção, armazenamento e recuperação de dados, ainda que isso carregue 
+extrema complexidade. 
+Existe, em recuperação de informação, uma tentativa de estruturação dos dados desestruturados para posterior armazenamento e recuperação, o que depende, antes de 
+tudo, do significado linguístico que se quer dar a esses dados, o que influencia sua relevância para o sistema em questão.
+
+Exemplos de dados desestruturados é o texto, mas também pode ser música ou imagens. Sistemas de recuperação de informação
+desses dados podem ser encontrados facilmente em outros lugares bla bla bla.
+
+Note-se que  Relevância é tema central na recuperação de informação e definir relevância depende de fatores como 
+características da busca, características de quem busca, características dos documentos, tempo e espaço, o que confere 
+à relevância natureza subjetiva e dinâmica. [1 TODO: completar] Como explicam os autores do livro, “relevância é 
+multifacetada, vez que é determinada não só pelo conteúdo de um resultado recuperado, mas também por aspectos como 
+autoridade, credibilidade, especificidade, exaustividade, atualidade e clareza de sua fonte.” [2] Portanto, um sistema 
+que tem como atribuição recuperar informação relevante ao usuário deve levar em conta …[TODO] A qualidade de um sistema
+de recomendação vai depender da relevância da informação recuperada.
+
+Existe uma caracterização formal para o modelo de recuperação de informação. Definido pela quadrupla IRM = {D, Q, F, R(qk, dj)}
+
+[TODO completar com def. da p. 5]
+
+A caracterização formal permite traçar, pelo menos de maneira rudimentar, a forma geral que deve assumir um sistema de 
+recuperação de informação. Diferentes modelos de recuperação de informação irão se diferenciar na definição de D, Q, F e R,
+a depender da forma de denotar relevância, das características intrínsecas dos documentos, dos usuários e de sua 
+forma de buscar.
+
+Nesse trabalho, importa a vector representation bla.
+
+## Falar sobre Vector Representation Model e Conectar Com embeddings
+
+No livro WIR e Speach Recognition tem isso.
+
+
+
+## Arquitetura do Sistema
+
+A partir de uma visão geral, portanto, destacam-se 3 componentes de um sistema de recuperação de informação: um módulo de 
+obtenção da consulta, um módulo de análise da consulta e busca e um módulo de administração do conteúdo. Evidentemente,
+estes módulos são uma visão geral e, assim, devem conter subdivisões. Um exemplo é a adminsitração de conteúdo que pode
+conter um sistema de ingestão de dados, um parseador, etc.
+
+### Administração de Conteúdo
+
+Como se administa o conteúdo desde a coleta, tratamento e armazenamento.
+- Document parsing -> reconhecimento e estruturação;
+- Análise léxica
+- Remoção de stop words
+
+
+Por que usar um índice.
+Processo de indexação e transformação do texto.
+Quais são os tipos de índices usados.
+Quais os índices usados no meu sistema.
+
+### 
+
+### Como medir a qualidade do sistema (NOTE: 1.2 em diante)
+
+Mencionar também o trabalho do FB
+
+
+[1] Todo este parágrafo foi baseado no livro Web Retrieval.<br>
+[2] Web Retrieval p. 4
+[3] Livro do Tigre p. 107
+[4] Livro do Tigre p. 118

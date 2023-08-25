@@ -1,10 +1,6 @@
 
 import re
-import logging
 from utils import log
-
-log = log()
-
 
 
 def split_by_delimiters(string, delimiters: list[str] | str) -> list[str]:
@@ -140,8 +136,24 @@ def structure_data_for_embedding(data):
         embedding_units = generate_embedding_units(
             row["title_pt"], row["abstract_pt"], row["keywords_pt"]
             )
-        for k in inputs.keys():
-            data_for_processing[k]["embedding_units"] += embedding_units[k]
-            data_for_processing[k]["indices"] += [index for _ in range(len(embedding_units[k]))]
+        # for k in inputs.keys():
+        #     data_for_processing[k]["embedding_units"] += embedding_units[k]
+        #     data_for_processing[k]["indices"] += [index for _ in range(len(embedding_units[k]))]
 
     return data_for_processing
+
+
+def tf_idf(document_collection: list):
+    """
+    Receives a document
+    """
+    pass
+
+
+def compute_term_doc_co_occurence_matrix(document_collection: list[str]):
+    """
+    Receives a document collection and computes the term-document co-occurence matrix.
+    """
+    doc_by_term = {}
+    term_by_doc = {}
+    pass

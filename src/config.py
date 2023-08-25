@@ -1,9 +1,11 @@
 import os
 
-# Global configuration
+PROJECT_NAME = "mobus"
+
+# Directories configuration
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SRC_DIR)
-
+# EXPERIMENTS_DIR = os.path.abspath("experiments")
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 LOGS_DIR = os.path.join(PROJECT_DIR, "logs")
 ERRORS_DIR = os.path.join(PROJECT_DIR, "data")
@@ -12,7 +14,14 @@ EMBEDDINGS_DIR = os.path.join(PROJECT_DIR, "data", "embeddings")
 INDICES_DIR = os.path.join(PROJECT_DIR, "data", "indices")
 MODELS_DIR = os.path.join(PROJECT_DIR, "data", "models")
 DATABASES_DIR = os.path.join(PROJECT_DIR, "data", "databases")
-DATABASE = os.path.join(DATABASES_DIR, "database.db")
+EXPERIMENTS_RESULTS_DIR = os.path.join(DATA_DIR, "results")
+
+# Database configuration
+POSTGRESQL_DB_NAME = PROJECT_NAME
+POSTGRESQL_DB_USER = "decarv"
+POSTGRESQL_DB_PASSWORD = "password"
+POSTGRESQL_DB_HOST = "gorila"
+POSTGRESQL_DB_PORT = "5432"
 ERRORS_DATABASE = os.path.join(DATABASES_DIR, "errors.db")
 
 # Crawler configuration
@@ -31,11 +40,9 @@ COLLECTIONS = [
         "abstracts",  # collection created with the abstracts texts
         "theses",  # collection created with theses paragraphs texts
 ]
-
 MODELS = [
         "distilbert-base-nli-stsb-mean-tokens",
         "neuralmind/bert-base-portuguese-cased"
 ]
-
-HOST = "0.0.0.0"
-PORT = "6333"
+QDRANT_DB_HOST = "0.0.0.0"
+QDRANT_DB_PORT = "6333"

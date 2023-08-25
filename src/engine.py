@@ -2,15 +2,14 @@
 
 """
 
-from ingestor import Ingestor
+from processor import Processor
 from indexer import Indexer
 from searcher import Searcher
 
 
 class Engine:
-    def __init__(self, ingestor: Ingestor, indexer: Indexer, processor, searcher:
-    Searcher):
-        self.ingestor = ingestor
+    def __init__(self, processor: Processor, indexer: Indexer, searcher: Searcher):
+        self.processor = processor
         self.indexer = indexer
         self.searcher = searcher
 
